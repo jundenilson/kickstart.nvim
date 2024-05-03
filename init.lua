@@ -108,7 +108,7 @@ vim.opt.relativenumber = true
 vim.opt.mouse = 'a'
 
 -- Don't show the mode, since it's already in the status line
-vim.opt.showmode = true
+vim.opt.showmode = false
 -- vim.opt.showmode = false
 
 -- Sync clipboard between OS and Neovim.
@@ -502,12 +502,23 @@ require('lazy').setup({
           --  For example, in C this would take you to the header.
           map('gD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
 
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+          if client and client.name == 'omnisharp' then
+            local tokenModifiers = client.server_capabilities.semanticTokensProvider.legend.tokenModifiers
+            for i, v in ipairs(tokenModifiers) do
+              tokenModifiers[i] = v:gsub(' ', '_')
+            end
+            local tokenTypes = client.server_capabilities.semanticTokensProvider.legend.tokenTypes
+            for i, v in ipairs(tokenTypes) do
+              tokenTypes[i] = v:gsub(' ', '_')
+            end
+          end
+
           -- The following two autocommands are used to highlight references of the
           -- word under your cursor when your cursor rests there for a little while.
           --    See `:help CursorHold` for information about when this is executed
           --
           -- When you move your cursor, the highlights will be cleared (the second autocommand).
-          local client = vim.lsp.get_client_by_id(event.data.client_id)
           if client and client.server_capabilities.documentHighlightProvider then
             vim.api.nvim_create_autocmd({ 'CursorHold', 'CursorHoldI' }, {
               buffer = event.buf,
@@ -551,7 +562,12 @@ require('lazy').setup({
         -- But for many setups, the LSP (`tsserver`) will work just fine
         -- tsserver = {},
         --
-
+        omnisharp = {},
+        -- c_sharp_ls = {
+        --   cmd = { 'omnisharp', '--languageserver' },
+        --   filetypes = { 'cs' },
+        --   capabilities = capabilities,
+        -- },
         lua_ls = {
           -- cmd = {...},
           -- filetypes = { ...},
@@ -566,6 +582,7 @@ require('lazy').setup({
             },
           },
         },
+        pyright = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -803,7 +820,7 @@ require('lazy').setup({
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
     opts = {
-      ensure_installed = { 'bash', 'c', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'html', 'lua', 'luadoc', 'markdown', 'vim', 'vimdoc', 'python', 'javascript' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -873,7 +890,12 @@ require('lazy').setup({
 
 --Custom
 
-vim.g.terminal_emulator = 'powershell'
+vim.api.nvim_command 'set shell=powershell.exe'
+vim.api.nvim_command 'set shellxquote='
+vim.api.nvim_command "let &shellcmdflag = '-NoLogo -ExecutionPolicy RemoteSigned -Command '"
+vim.api.nvim_command "let &shellquote   = ''"
+vim.api.nvim_command "let &shellpipe    = '| Out-File -Encoding UTF8 %s'"
+vim.api.nvim_command "let &shellredir   = '| Out-File -Encoding UTF8 %s'"
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
